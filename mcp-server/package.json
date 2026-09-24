@@ -1,0 +1,20 @@
+{
+  "name": "wisdom-studio-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server so Claude can drive Wisdom Studio directly — create projects, add content, generate AI images, and export finished PDFs.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}

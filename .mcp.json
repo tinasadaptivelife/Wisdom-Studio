@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codesight": {
+      "type": "stdio",
+      "command": "codesight",
+      "args": [
+        "--mcp"
+      ],
+      "env": {}
+    }
+  }
+}

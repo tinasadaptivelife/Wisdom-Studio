@@ -1,0 +1,223 @@
+.home {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--space-7) var(--space-5) var(--space-8);
+}
+
+.home-header h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-2xl);
+  color: var(--color-accent);
+  margin: 0 0 var(--space-1);
+}
+
+.home-header p {
+  color: var(--color-ink-muted);
+  font-size: var(--text-md);
+  margin: 0;
+  max-width: 60ch;
+}
+
+.home-section {
+  margin-top: var(--space-7);
+}
+
+.home-section h2 {
+  font-size: var(--text-lg);
+  color: var(--color-accent);
+  margin: 0 0 var(--space-4);
+}
+
+.home-section h2 + .quiet {
+  margin-bottom: var(--space-4);
+}
+
+.home-error {
+  background: var(--color-danger-tint);
+  border: 1.5px solid var(--color-danger);
+  color: var(--color-danger);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+}
+
+.import-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.import-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
+.import-controls select,
+.import-controls input[type='file'] {
+  min-height: 44px;
+}
+
+.import-controls button {
+  min-height: 44px;
+}
+
+.home-empty {
+  background: var(--color-panel);
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-5);
+  color: var(--color-ink-muted);
+  max-width: 56ch;
+}
+
+.home-empty p {
+  margin: 0;
+}
+
+.template-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.template-card {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  padding: var(--space-3);
+  gap: var(--space-1);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.template-card:hover:not(:disabled) {
+  background: var(--color-surface);
+  border-color: var(--accent, var(--color-primary));
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.template-card:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.template-preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-2);
+}
+
+.template-card-title {
+  font-weight: 700;
+  font-size: var(--text-md);
+  color: var(--color-ink);
+}
+
+.template-card-desc {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.project-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+
+.project-item-open {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: var(--space-1);
+  gap: var(--space-3);
+}
+
+.project-item:has(.project-item-open:hover) {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.project-item-thumb {
+  width: 56px;
+  height: 72px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-panel);
+}
+
+.project-item-thumb-empty {
+  display: block;
+}
+
+.project-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.project-item-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-item-meta {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.project-item-actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.project-item-actions button {
+  font-size: var(--text-sm);
+}
+
+.project-item-rename-input {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  width: 160px;
+}

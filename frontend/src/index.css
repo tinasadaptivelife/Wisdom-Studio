@@ -1,0 +1,315 @@
+/* ---------------------------------------------------------------------------
+   Wisdom Studio design tokens
+   Register: product (design serves the task). Audience: adults 50+,
+   accessibility-first. Warm, uncluttered, legible. See PRODUCT.md / DESIGN.md.
+--------------------------------------------------------------------------- */
+
+:root {
+  /* -- Color: surfaces (warm cream canvas, cooler panel layer) -- */
+  --color-bg: #fdf8f0; /* app canvas */
+  --color-surface: #ffffff; /* cards, panels content */
+  --color-panel: #f8f2e7; /* second neutral: toolbars, sidebars */
+  --color-canvas-mat: #efe6d6; /* the "desk" behind the page */
+  --color-border: #e4dac9;
+  --color-border-strong: #cfc2ab;
+
+  /* -- Color: ink -- */
+  --color-ink: #2b2620; /* 13.9:1 on --color-bg */
+  --color-ink-muted: #5d564b; /* 6.3:1 on --color-bg */
+  --color-ink-faint: #857c6d; /* large text / disabled only */
+
+  /* -- Color: brand & semantic -- */
+  --color-primary: #b23a48; /* 5.6:1 with white text */
+  --color-primary-hover: #9d3140;
+  --color-primary-active: #8a2a38;
+  --color-primary-tint: #f9e9eb;
+  --color-accent: #1d3557; /* structure: topbar, headings */
+  --color-accent-hover: #274468;
+  --color-accent-tint: #e8eef6;
+  --color-success: #1f7a6d; /* 4.9:1 on white */
+  --color-success-tint: #e4f2ef;
+  --color-danger: #b3261e; /* 6.5:1 on white */
+  --color-danger-tint: #fbebea;
+  --color-warm: #f4a259; /* decorative brand warmth only, never text */
+
+  /* -- Type -- */
+  --font-ui: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --text-sm: 0.875rem; /* 14px — labels/meta only */
+  --text-base: 1rem; /* 16px floor */
+  --text-md: 1.125rem;
+  --text-lg: 1.3rem;
+  --text-xl: 1.6rem;
+  --text-2xl: 2.1rem;
+
+  /* -- Space (4px base) -- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* -- Shape & depth -- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgb(43 38 32 / 0.06), 0 1px 3px rgb(43 38 32 / 0.08);
+  --shadow-md: 0 2px 4px rgb(43 38 32 / 0.05), 0 6px 16px rgb(43 38 32 / 0.1);
+  --shadow-lg: 0 4px 10px rgb(43 38 32 / 0.08), 0 16px 36px rgb(43 38 32 / 0.14);
+
+  /* -- Motion -- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+
+  /* -- Z scale -- */
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+
+  --focus-ring: 3px solid var(--color-accent);
+
+  font-size: 16px;
+}
+
+/* High-contrast theme: overrides only the tokens above, so every component
+   (which already consumes these vars exclusively) picks it up for free. */
+:root[data-contrast='high'] {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-panel: #f0f0f0;
+  --color-canvas-mat: #e0e0e0;
+  --color-border: #000000;
+  --color-border-strong: #000000;
+
+  --color-ink: #000000;
+  --color-ink-muted: #000000;
+  --color-ink-faint: #1a1a1a;
+
+  --color-primary: #8b0000;
+  --color-primary-hover: #6e0000;
+  --color-primary-active: #560000;
+  --color-primary-tint: #ffe5e5;
+  --color-accent: #00205b;
+  --color-accent-hover: #001640;
+  --color-accent-tint: #dce6ff;
+  --color-success: #0b5c33;
+  --color-success-tint: #d9f2e3;
+  --color-danger: #8b0000;
+  --color-danger-tint: #ffe5e5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: var(--text-base);
+  color: inherit;
+}
+
+/* ---- Buttons: one vocabulary, all states ---- */
+
+button {
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  padding: var(--space-2) var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    transform var(--duration-fast) var(--ease-out);
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: var(--color-panel);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  box-shadow: var(--shadow-sm);
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+button.primary:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+button.quiet {
+  border-color: transparent;
+  background: transparent;
+}
+
+button.quiet:hover:not(:disabled) {
+  background: var(--color-panel);
+  border-color: transparent;
+}
+
+/* ---- Inputs ---- */
+
+input:not([type='color']),
+select,
+textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  min-height: 40px;
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+input:not([type='color']):hover,
+select:hover,
+textarea:hover {
+  border-color: var(--color-border-strong);
+}
+
+/* ---- Focus: always visible, never removed ---- */
+
+a,
+button,
+input,
+select,
+textarea,
+[tabindex] {
+  outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--focus-ring);
+}
+
+/* ---- Utilities ---- */
+
+.a11y-bar {
+  position: fixed;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: var(--z-toast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.a11y-bar-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.a11y-bar-checkbox {
+  min-height: 44px;
+}
+
+.a11y-bar input[type='range'] {
+  min-height: 44px;
+}
+
+.a11y-bar input[type='checkbox'] {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--color-accent);
+  color: white;
+  padding: var(--space-3) var(--space-4);
+  border-radius: 0 0 var(--radius-md) 0;
+  z-index: var(--z-toast);
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Motion respect ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

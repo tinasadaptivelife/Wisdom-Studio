@@ -1,0 +1,35 @@
+[
+  {
+    "id": "sample-gothic",
+    "name": "Sample Gothic",
+    "file": "sample-gothic.jpg",
+    "width": 1,
+    "height": 1,
+    "tags": ["dark", "gothic"],
+    "brands": [],
+    "description": "Test fixture — a brand-neutral dark border.",
+    "addedAt": "2026-01-01"
+  },
+  {
+    "id": "sample-cozy",
+    "name": "Sample Cozy",
+    "file": "sample-cozy.jpg",
+    "width": 1,
+    "height": 1,
+    "tags": ["cozy", "craft"],
+    "brands": [],
+    "description": "Test fixture — a brand-neutral cozy border.",
+    "addedAt": "2026-01-01"
+  },
+  {
+    "id": "sample-branded",
+    "name": "Sample Branded",
+    "file": "sample-branded.jpg",
+    "width": 1,
+    "height": 1,
+    "tags": ["cute"],
+    "brands": ["sample-brand"],
+    "description": "Test fixture — a border tied to a brand.",
+    "addedAt": "2026-01-01"
+  }
+]

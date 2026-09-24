@@ -1,0 +1,55 @@
+# Libraries
+
+- `backend/services/imageGen/modelCatalog.js` — function curateModels: (liveModels) => void, function isBlockedModelName
+- `backend/services/imageGen/promptTemplates.js`
+  - function buildPrompt: ({...}, userPrompt }) => void
+  - function dimensionsForAspectRatio: (elementWidth, elementHeight, {...}) => void
+  - const DEFAULT_MODEL
+  - const STYLE_MODES
+- `backend/services/pdfExport.js`
+  - function pxToPt: (px) => void
+  - function computeLineX: (lineWidthPt, boxXPt, boxWidthPt, align) => void
+  - function topLeftToPdfY: (elementYpt, elementHeightPt, pageHeightPt) => void
+  - function wrapTextLines: (text, font, fontSize, maxWidthPt) => void
+  - function renderProjectToPdf: (project, {...}) => void
+- `backend/services/textImport/docxImport.js` — function extractDocxText: (buffer) => void
+- `frontend/src/utils/capturePages.js`
+  - function waitForPageImages: (page, nodeRefs, timeoutMs) => void
+  - function captureThumbnail: (stage) => void
+  - function downloadBytes: (bytes, filename, mimeType) => void
+  - function waitForNextPaint
+- `frontend/src/utils/exportPdf.js`
+  - function pageSizePt: (pageSizeKey) => void
+  - function bookletPageOrder: (pageCount) => void
+  - function buildPdfBytes: (pageDataUrls, pageSizeKey, {...}) => void
+  - function sanitizeFilename: (name) => void
+- `frontend/src/utils/id.js` — function makeId
+- `frontend/src/utils/nudge.js` — function nudgeDelta: (key, shiftKey) => void
+- `frontend/src/utils/speech.js`
+  - function isDictationSupported: () => void
+  - function isReadAloudSupported: () => void
+  - function createRecognizer: ({...}, onEnd }) => void
+  - function readAloud: (text, {...}) => void
+  - function stopReadingAloud: () => void
+- `frontend/src/utils/textFlow.js`
+  - function estimateCapacity: ({...}, height, fontSize, avgCharWidthRatio, lineHeightRatio) => void
+  - function wrapParagraph: (paragraph, charsPerLine) => void
+  - function flowTextIntoPages: (text, {...}, linesPerPage }) => void
+- `frontend/src/utils/textImport.js`
+  - function readPlainTextFile: (file) => void
+  - function fileToBase64: (file) => void
+  - function readImportedFile: (file) => void
+- `frontend/src/utils/textSelection.js` — function extractSelection: (text, start, end) => void
+- `mcp-server/client.js` — function createClient: (baseUrl) => void
+- `mcp-server/templates.js`
+  - function getTemplate
+  - const PAGE_SIZES
+  - const TEMPLATES
+- `mcp-server/tools.js`
+  - function listTemplates: () => void
+  - function createProject: (client, {...}, templateKey, pageSize) => void
+  - function setText: (client, {...}, pageIndex, elementName, text }) => void
+  - function addElement: (client, {...}, pageIndex, element }) => void
+  - function deriveImagePromptFromQuote: (quote) => void
+  - function generateImage: (client, {...}, pageIndex, elementName, prompt, mode, model, printQuality, timeoutMs) => void
+  - _...2 more_

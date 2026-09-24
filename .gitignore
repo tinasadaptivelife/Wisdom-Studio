@@ -1,0 +1,22 @@
+node_modules/
+dist/
+backend/data/
+.env
+.DS_Store
+.claude/settings.local.json
+
+# Local samples and Finder aliases (not source)
+/*.pdf
+/*.png
+/start-wisdom.sh alias
+
+# Personal border artwork: kept locally, never published. Only the empty
+# shared manifest is tracked; add your own art + manifest.local.json.
+backend/assets/borders/*
+!backend/assets/borders/manifest.json
+
+# Personal tooling and design-review notes
+.agents/
+.claude/skills/
+.impeccable/
+codesight-setup.sh
