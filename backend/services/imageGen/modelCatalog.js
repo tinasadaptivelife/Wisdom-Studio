@@ -7,6 +7,8 @@ const CURATED_MODELS = [
   { name: 'Deliberate', label: 'Detailed illustrations' },
   { name: 'Dreamshaper', label: 'Painterly and artistic' },
   { name: 'AlbedoBase XL (SDXL)', label: 'High detail (takes longer)' },
+  { name: 'AlbedoBase XL 3.1', label: 'High detail, updated version' },
+  { name: 'Z-Image-Turbo', label: 'Sharp, precise, very new' },
   { name: 'ICBINP - I Can\'t Believe It\'s Not Photography', label: 'Photo-realistic' },
   { name: 'Flux.1-Schnell fp8 (Compact)', label: 'Newest quality (slowest)' },
 ];

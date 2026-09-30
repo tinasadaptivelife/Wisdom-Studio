@@ -1,3 +1,5 @@
+import { localProjectsApi } from './localProjectsApi.js';
+
 const BASE = '/api/projects';
 
 async function handle(res) {
@@ -9,7 +11,7 @@ async function handle(res) {
   return res.json();
 }
 
-export const projectsApi = {
+const serverProjectsApi = {
   list: () => fetch(BASE).then(handle),
   get: (id) => fetch(`${BASE}/${id}`).then(handle),
   create: (project) =>
@@ -26,3 +28,7 @@ export const projectsApi = {
     }).then(handle),
   remove: (id) => fetch(`${BASE}/${id}`, { method: 'DELETE' }).then(handle),
 };
+
+// The preview build (`npm run build:demo`) has no server behind it, so it keeps
+// projects in the browser instead. Everything else uses the real server.
+export const projectsApi = import.meta.env.VITE_PREVIEW ? localProjectsApi : serverProjectsApi;

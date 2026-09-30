@@ -45,6 +45,7 @@ export default function ElementRenderer({ element, isSelected, registerRef, onSe
           fill={element.fill}
           stroke={element.stroke}
           strokeWidth={element.strokeWidth}
+          opacity={element.opacity ?? 1}
         />
       )}
       {type === 'ellipse' && (
@@ -63,7 +64,7 @@ export default function ElementRenderer({ element, isSelected, registerRef, onSe
           <Rect
             width={width}
             height={height}
-            fill="#f0f0f0"
+            fill={element.placeholderStyle === 'outline' ? 'transparent' : '#f0f0f0'}
             stroke="#9a9a9a"
             strokeWidth={2}
             dash={[10, 6]}
@@ -92,6 +93,7 @@ export default function ElementRenderer({ element, isSelected, registerRef, onSe
           text={element.text}
           fontSize={element.fontSize}
           fontFamily={element.fontFamily}
+          fontStyle={element.fontStyle}
           fill={element.fill}
           align={element.align}
           onDblClick={(e) => onDblClickText(element, e.target.getParent())}

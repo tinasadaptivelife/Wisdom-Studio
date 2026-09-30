@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { StandardFonts, PDFDocument } from 'pdf-lib';
+import path from 'node:path';
+import { describe, it, expect, afterEach } from 'vitest';
+import { StandardFonts, PDFDocument, PDFName, PDFDict } from 'pdf-lib';
 import sharp from 'sharp';
 import {
   pxToPt,
@@ -137,5 +138,103 @@ describe('renderProjectToPdf', () => {
     });
     const doc = await PDFDocument.load(bytes);
     expect(doc.getPageCount()).toBe(1);
+  });
+});
+
+// Names of every font embedded in a PDF (BaseFont of each /Font dictionary).
+async function embeddedFontNames(bytes) {
+  const doc = await PDFDocument.load(bytes);
+  const names = [];
+  for (const [, obj] of doc.context.enumerateIndirectObjects()) {
+    const base = obj?.get?.(PDFName.of('BaseFont'));
+    if (base) names.push(base.toString());
+  }
+  return names;
+}
+
+describe('renderProjectToPdf brand fonts', () => {
+  afterEach(() => {
+    process.env.WISDOM_STUDIO_BRANDS_DIR = '';
+  });
+
+
+  const textProject = (fontFamily, text = 'The river remembers.', extra = {}) => ({
+    pageSize: 'letter',
+    pages: [
+      {
+        id: 'p1',
+        elements: [
+          { id: 'e1', type: 'text', x: 40, y: 40, width: 600, height: 80, fontSize: 40, fontFamily, fill: '#111111', text, align: 'left', ...extra },
+        ],
+      },
+    ],
+  });
+
+  it('embeds Atkinson Hyperlegible when a text element asks for it', async () => {
+    const names = await embeddedFontNames(await renderProjectToPdf(textProject('Atkinson Hyperlegible, sans-serif')));
+    expect(names.some((n) => /Atkinson/i.test(n))).toBe(true);
+    expect(names.some((n) => /Helvetica/i.test(n))).toBe(false);
+  });
+
+  it('embeds a brand pack font when the pack has one, and Helvetica when it does not', async () => {
+    const title = textProject('Example Display, serif', 'Title', { fontStyle: 'bold' });
+    // The fixture pack's "Example Display" files are copies of Atkinson
+    // Hyperlegible, so the embedded name shows they were used.
+    process.env.WISDOM_STUDIO_BRANDS_DIR = path.resolve('test/fixtures/brand-pack');
+    const withPack = await embeddedFontNames(await renderProjectToPdf(title));
+    expect(withPack.some((n) => /Atkinson.*Bold/i.test(n))).toBe(true);
+    expect(withPack.some((n) => /Helvetica/i.test(n))).toBe(false);
+
+    process.env.WISDOM_STUDIO_BRANDS_DIR = '';
+    const withoutPack = await embeddedFontNames(await renderProjectToPdf(title));
+    expect(withoutPack.some((n) => /Helvetica/i.test(n))).toBe(true);
+  });
+
+  it('falls back to Helvetica for a family it has no file for', async () => {
+    const names = await embeddedFontNames(await renderProjectToPdf(textProject('Poppins, Arial, sans-serif')));
+    expect(names.some((n) => /Helvetica/i.test(n))).toBe(true);
+  });
+
+  it('sets accented letters, em dashes and curly quotes without failing', async () => {
+    const bytes = await renderProjectToPdf(textProject('Atkinson Hyperlegible', '“Rían” — dez’s café'));
+    expect(bytes.length).toBeGreaterThan(1000);
+  });
+
+  it('draws two elements in different families in one document', async () => {
+    const project = textProject('Atkinson Hyperlegible');
+    project.pages[0].elements.push({ id: 'e2', type: 'text', x: 40, y: 200, width: 600, height: 80, fontSize: 40, fontFamily: 'Poppins', fill: '#111111', text: 'Title', align: 'left' });
+    const names = await embeddedFontNames(await renderProjectToPdf(project));
+    expect(names.some((n) => /Atkinson/i.test(n))).toBe(true);
+    expect(names.some((n) => /Helvetica/i.test(n))).toBe(true);
+  });
+});
+
+describe('renderProjectToPdf rectangle opacity', () => {
+  const rectProject = (opacity) => ({
+    pageSize: 'letter',
+    pages: [
+      {
+        id: 'p1',
+        elements: [
+          { id: 'r1', type: 'rect', x: 0, y: 0, width: 400, height: 400, fill: '#111111', stroke: '#999999', strokeWidth: 0, ...(opacity == null ? {} : { opacity }) },
+        ],
+      },
+    ],
+  });
+
+  // Fill opacities (/ca) in the page's graphics states (its ExtGState resources).
+  async function fillOpacities(bytes) {
+    const doc = await PDFDocument.load(bytes);
+    const states = doc.getPage(0).node.Resources()?.lookup(PDFName.of('ExtGState'), PDFDict);
+    if (!states) return [];
+    return states.entries().map(([, ref]) => Number(doc.context.lookup(ref, PDFDict).get(PDFName.of('ca'))?.toString()));
+  }
+
+  it('draws a translucent rectangle when the element has an opacity below 1', async () => {
+    expect(await fillOpacities(await renderProjectToPdf(rectProject(0.5)))).toContain(0.5);
+  });
+
+  it('draws an ordinary rectangle, with no transparency, when there is no opacity', async () => {
+    expect(await fillOpacities(await renderProjectToPdf(rectProject()))).toEqual([]);
   });
 });

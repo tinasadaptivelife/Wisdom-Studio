@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 import Home from './Home.jsx';
 import { useDesignStore } from '../../store/useDesignStore.js';
+import { setBrands } from '../../templates/brands.js';
+import { EXAMPLE_BRANDS } from '../../test/exampleBrands.js';
 
 vi.mock('../../utils/textImport.js', () => ({ readImportedFile: vi.fn() }));
 import { readImportedFile } from '../../utils/textImport.js';
@@ -20,6 +22,25 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
+
+describe('Home in the preview build (no server behind it)', () => {
+  it('says plainly that designs stay in this browser and which features need the desktop app', () => {
+    vi.stubEnv('VITE_PREVIEW', '1');
+    render(<Home />);
+    const note = screen.getByRole('note');
+    expect(note.textContent).toMatch(/preview/i);
+    expect(note.textContent).toMatch(/saved in this browser/i);
+    expect(note.textContent).toMatch(/AI images/i);
+    expect(note.textContent).toMatch(/PDF export/i);
+    expect(note.textContent).toMatch(/desktop app/i);
+  });
+
+  it('shows no such note in the normal app', () => {
+    render(<Home />);
+    expect(screen.queryByRole('note')).toBeNull();
+  });
 });
 
 describe('Home', () => {
@@ -60,6 +81,60 @@ describe('Home', () => {
     fireEvent.click(screen.getByRole('button', { name: /sage & cream flyer/i }));
 
     expect(useDesignStore.getState().project?.templateKey).toBe('flyer-sage-cream');
+  });
+
+  describe('brand picker in the variant gallery', () => {
+    const openFlyerGallery = () => {
+      render(<Home />);
+      fireEvent.click(screen.getByRole('button', { name: /browse flyer templates/i }));
+    };
+
+    describe('with several brands', () => {
+      beforeEach(() => setBrands(EXAMPLE_BRANDS));
+      afterEach(() => setBrands(null));
+
+      it('offers a button for each brand, with the first selected', () => {
+        openFlyerGallery();
+        const group = screen.getByRole('group', { name: /brand/i });
+        const buttons = Array.from(group.querySelectorAll('button'));
+        expect(buttons.map((b) => b.textContent)).toEqual(['Example Studio', 'Sample Podcast']);
+        expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
+        expect(buttons[1].getAttribute('aria-pressed')).toBe('false');
+      });
+
+      it('shows only the selected brand’s templates', () => {
+        openFlyerGallery();
+        expect(screen.getByRole('button', { name: /example: paper & navy flyer/i })).toBeTruthy();
+        expect(screen.getAllByRole('listitem').length).toBeGreaterThan(0);
+        expect(screen.queryByRole('button', { name: /sample: night & gold flyer/i })).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Sample Podcast' }));
+
+        expect(screen.getByRole('button', { name: /sample: night & gold flyer/i })).toBeTruthy();
+        expect(screen.getByRole('button', { name: /sample: night & mist flyer/i })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: /example: paper & navy flyer/i })).toBeNull();
+        expect(screen.getByRole('button', { name: 'Sample Podcast' }).getAttribute('aria-pressed')).toBe('true');
+      });
+
+      it('creates a project from a template of another brand', () => {
+        openFlyerGallery();
+        fireEvent.click(screen.getByRole('button', { name: 'Sample Podcast' }));
+        fireEvent.click(screen.getByRole('button', { name: /sample: night & gold flyer/i }));
+
+        expect(useDesignStore.getState().project?.templateKey).toBe('flyer-sample-night-gold');
+      });
+
+      it('does not show the brand picker on the type grid', () => {
+        render(<Home />);
+        expect(screen.queryByRole('group', { name: /brand/i })).toBeNull();
+      });
+    });
+
+    it('does not show a brand picker when there is only the built-in brand', () => {
+      openFlyerGallery();
+      expect(screen.queryByRole('group', { name: /brand/i })).toBeNull();
+      expect(screen.getByRole('button', { name: /cream & terracotta flyer/i })).toBeTruthy();
+    });
   });
 
   it('returns to the type grid via the back button without creating a project', () => {

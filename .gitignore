@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-preview/
 backend/data/
 .env
 .DS_Store
@@ -20,3 +21,7 @@ backend/assets/borders/*
 .claude/skills/
 .impeccable/
 codesight-setup.sh
+
+# A brand pack kept inside this folder stays local (see docs/brand-packs.md)
+/brand-pack/
+/brands.local/

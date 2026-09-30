@@ -1,0 +1,32 @@
+{
+  "brands": [
+    {
+      "key": "example",
+      "label": "Example Studio",
+      "shortLabel": "Example",
+      "fonts": { "reading": "Atkinson Hyperlegible", "display": "Example Display", "displayFallback": "serif" },
+      "footerText": "example.test",
+      "imageStyle": {
+        "label": "Example Studio look",
+        "suffix": ", soft watercolor, warm morning light",
+        "negativePrompt": "blurry, text, 3D render"
+      },
+      "palettes": [
+        { "key": "paper-navy", "label": "Paper & Navy", "suffix": "", "background": "#F7F3EA", "border": "#1F3A5F", "headline": "#1F3A5F", "body": "#222222" },
+        { "key": "navy-paper", "label": "Navy & Paper", "background": "#1F3A5F", "border": "#F7F3EA", "headline": "#FFFFFF", "body": "#FFFFFF" }
+      ]
+    },
+    {
+      "key": "sample",
+      "label": "Sample Podcast",
+      "shortLabel": "Sample",
+      "fonts": { "reading": "Atkinson Hyperlegible", "display": "Atkinson Hyperlegible" },
+      "palettes": [
+        { "key": "night-gold", "label": "Night & Gold", "background": "#141414", "border": "#E0B84C", "headline": "#E0B84C", "body": "#F0F0F0" }
+      ]
+    }
+  ],
+  "fontFiles": {
+    "Example Display": { "normal": "example-display-400.woff", "bold": "example-display-700.woff" }
+  }
+}

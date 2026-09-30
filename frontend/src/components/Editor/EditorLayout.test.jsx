@@ -24,25 +24,28 @@ afterEach(() => {
 });
 
 describe('EditorLayout autosave', () => {
-  it('does not persist a brand-new, untouched project', async () => {
+  it('saves a brand-new project on its own, without waiting for an edit', async () => {
     useDesignStore.getState().newProjectFromTemplate('blank');
     render(<EditorLayout />);
 
     await vi.advanceTimersByTimeAsync(2000);
 
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith('/api/projects', expect.objectContaining({ method: 'POST' }));
+    expect(useDesignStore.getState().saveStatus).toBe('saved');
   });
 
-  it('persists a brand-new project once the user makes a real edit', async () => {
+  it('creates the project once, then saves later edits over it with PUT', async () => {
     useDesignStore.getState().newProjectFromTemplate('blank');
     render(<EditorLayout />);
     await vi.advanceTimersByTimeAsync(2000);
-    expect(fetch).not.toHaveBeenCalled();
 
     useDesignStore.getState().addElement('text');
     await vi.advanceTimersByTimeAsync(2000);
 
-    expect(fetch).toHaveBeenCalledWith('/api/projects', expect.objectContaining({ method: 'POST' }));
+    const id = useDesignStore.getState().project.id;
+    const posts = fetch.mock.calls.filter(([, opts]) => opts?.method === 'POST');
+    expect(posts).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledWith(`/api/projects/${id}`, expect.objectContaining({ method: 'PUT' }));
   });
 
   it('autosaves an already-loaded project via PUT, not POST', async () => {

@@ -6,6 +6,8 @@ export const PAGE_SIZES = {
   a4: { label: 'A4', width: 794, height: 1123 },
   'letter-landscape': { label: 'US Letter (Landscape)', width: 1056, height: 816 },
   'social-square': { label: 'Social Square (1080×1080)', width: 1080, height: 1080 },
+  story: { label: 'Story or Short (1080×1920)', width: 1080, height: 1920 },
+  'youtube-thumbnail': { label: 'YouTube Thumbnail (1280×720)', width: 1280, height: 720 },
 };
 
 export const DEFAULT_PAGE_SIZE = 'letter';

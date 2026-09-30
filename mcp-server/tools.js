@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
-import { getTemplate, TEMPLATES, PAGE_SIZES } from './templates.js';
+import { getTemplate, getTemplates, resolveTemplateKey, PAGE_SIZES } from './templates.js';
+import { getBrands } from './brands.js';
 
 const POLL_INTERVAL_MS = 3000;
 const DEFAULT_TIMEOUT_MS = 180000;
@@ -32,12 +33,41 @@ async function resolveReferenceImage(ref) {
   return `data:application/octet-stream;base64,${bytes.toString('base64')}`;
 }
 
-export function listTemplates() {
-  return TEMPLATES.map((t) => ({ key: t.key, title: t.title }));
+export function listTemplates({ brand, typeKey } = {}) {
+  const brands = getBrands();
+  if (brand && !brands.some((b) => b.key === brand)) {
+    throw new Error(`Unknown brand "${brand}". Valid brands: ${brands.map((b) => b.key).join(', ')}.`);
+  }
+  return getTemplates()
+    .filter((t) => (!brand || t.brand === brand) && (!typeKey || t.typeKey === typeKey))
+    .map((t) => ({
+      key: t.key,
+      title: t.title,
+      typeKey: t.typeKey,
+      ...(t.brand ? { brand: t.brand, paletteKey: t.paletteKey } : {}),
+    }));
 }
 
-export async function createProject(client, { name, templateKey = 'blank', pageSize = 'letter' } = {}) {
-  const template = getTemplate(templateKey);
+// `imageStyle` is the style key to pass to generate_image (it is the brand's
+// key), present only for a brand that defines an image style.
+export function listBrands() {
+  return getBrands().map(({ key, label, palettes, imageStyle }) => ({
+    key,
+    label,
+    ...(imageStyle ? { imageStyle: key } : {}),
+    palettes: palettes.map(({ key: paletteKey, label: paletteLabel, background, border, headline, body }) => ({
+      key: paletteKey,
+      label: paletteLabel,
+      background,
+      border,
+      headline,
+      body,
+    })),
+  }));
+}
+
+export async function createProject(client, { name, templateKey = 'blank', brand, palette, pageSize = 'letter' } = {}) {
+  const template = getTemplate(resolveTemplateKey(templateKey, brand, palette));
   const now = new Date().toISOString();
   const project = {
     id: `proj_${randomUUID().slice(0, 8)}`,
@@ -233,13 +263,15 @@ export async function exportPdf(client, { projectId, outputPath, writeFile }) {
 
 export async function createQuoteCard(
   client,
-  { quote, author, imagePrompt, style = 'general', pageSize = 'letter', printQuality = false, outputPath, writeFile, timeoutMs }
+  { quote, author, imagePrompt, style = 'general', brand, palette, pageSize = 'letter', printQuality = false, outputPath, writeFile, timeoutMs }
 ) {
   if (!quote || !quote.trim()) throw new Error('A quote is required to create a quote card.');
 
   const project = await createProject(client, {
     name: `Quote card — ${quote.trim().slice(0, 40)}`,
     templateKey: 'quote-card',
+    brand,
+    palette,
     pageSize,
   });
 
