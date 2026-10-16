@@ -138,11 +138,26 @@ const previews = {
 
 // Variants of the same asset type share that type's illustration — keyed by
 // typeKey, not the specific template/variant key.
-export default function TemplatePreview({ typeKey, accent }) {
+export default function TemplatePreview({ typeKey, accent, palette }) {
   return (
     <svg viewBox="0 0 140 130" className="template-preview" aria-hidden="true" focusable="false">
-      <rect x="0" y="0" width="140" height="130" rx="10" fill={accent} opacity="0.28" />
-      {previews[typeKey] ?? previews.blank}
+      {palette ? (
+        // Branded variant: show the real palette. The backdrop is the
+        // variant's background with its border, and four dots show the
+        // background, border, headline and body colors.
+        <>
+          <rect x="1.5" y="1.5" width="137" height="127" rx="9" fill={palette.background} stroke={palette.border} strokeWidth="3" />
+          {previews[typeKey] ?? previews.blank}
+          {[palette.background, palette.border, palette.headline, palette.body].map((color, i) => (
+            <circle key={i} cx={14 + i * 0} cy={22 + i * 14} r="5" fill={color} stroke="#8a8175" strokeWidth="1" />
+          ))}
+        </>
+      ) : (
+        <>
+          <rect x="0" y="0" width="140" height="130" rx="10" fill={accent} opacity="0.28" />
+          {previews[typeKey] ?? previews.blank}
+        </>
+      )}
     </svg>
   );
 }

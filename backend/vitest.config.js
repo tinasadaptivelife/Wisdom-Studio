@@ -11,6 +11,9 @@ export default defineConfig({
       // Border routes read tiny fixture images, not the real (partly
       // private, gitignored) artwork in assets/borders.
       WISDOM_STUDIO_BORDERS_DIR: 'test/fixtures/borders',
+      // No brand pack unless a test points this at the fixture pack, so a
+      // developer's real pack in ~/.wisdom-studio/brands never affects tests.
+      WISDOM_STUDIO_BRANDS_DIR: '',
     },
   },
 });

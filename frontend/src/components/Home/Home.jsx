@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ASSET_TYPES, getTemplatesForType } from '../../templates/templates.js';
+import { getBrands } from '../../templates/brands.js';
 import { useDesignStore } from '../../store/useDesignStore.js';
 import { projectsApi } from '../../api/projectsApi.js';
 import { readImportedFile } from '../../utils/textImport.js';
@@ -24,6 +25,7 @@ export default function Home() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
+  const [selectedBrand, setSelectedBrand] = useState(getBrands()[0].key);
 
   useEffect(() => {
     projectsApi
@@ -102,6 +104,12 @@ export default function Home() {
       <header className="home-header">
         <h1>Wisdom Studio</h1>
         <p>Design quote cards, newsletters, workbooks, certificates, and more — free to create, free to share.</p>
+        {import.meta.env.VITE_PREVIEW && (
+          <p className="preview-note" role="note">
+            This is a preview. Your designs are saved in this browser only. AI images, importing files and PDF export
+            work in the desktop app.
+          </p>
+        )}
       </header>
 
       <section aria-labelledby="templates-heading" className="home-section">
@@ -113,9 +121,23 @@ export default function Home() {
             ← Back to templates
           </button>
         )}
+        {selectedType && getBrands().length > 1 && (
+          <div className="brand-picker" role="group" aria-label="Brand">
+            {getBrands().map((brand) => (
+              <button
+                key={brand.key}
+                className="brand-chip"
+                aria-pressed={selectedBrand === brand.key}
+                onClick={() => setSelectedBrand(brand.key)}
+              >
+                {brand.label}
+              </button>
+            ))}
+          </div>
+        )}
         <ul className="template-grid" role="list">
           {selectedType
-            ? getTemplatesForType(selectedType.key).map((variant) => {
+            ? getTemplatesForType(selectedType.key, selectedBrand).map((variant) => {
                 const accent = variant.accent ?? selectedType.accent;
                 return (
                   <li key={variant.key}>
@@ -125,7 +147,7 @@ export default function Home() {
                       onClick={() => newProjectFromTemplate(variant.key, selectedType.defaultPageSize)}
                       aria-label={`Start a new ${variant.title} project`}
                     >
-                      <TemplatePreview typeKey={selectedType.key} accent={accent} />
+                      <TemplatePreview typeKey={selectedType.key} accent={accent} palette={variant.palette} />
                       <span className="template-card-title">{variant.title}</span>
                       <span className="template-card-desc">{variant.description}</span>
                     </button>

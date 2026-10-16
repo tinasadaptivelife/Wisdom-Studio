@@ -1,3 +1,5 @@
+import { getBrandPack } from '../brandPack.js';
+
 // Flux.1-Schnell follows prompts far more faithfully than the SD1.5
 // `stable_diffusion` checkpoint (which routinely ignored the subject) and,
 // now that the provider gives each model family its own sampler/step/cfg
@@ -34,13 +36,27 @@ export const STYLE_MODES = [
   },
 ];
 
-const modeByKey = Object.fromEntries(STYLE_MODES.map((m) => [m.key, m]));
+// The generic styles plus one for each brand in the brand pack that defines an
+// imageStyle (the style's key is the brand's key). Read on each call, so an edit
+// to the pack shows up on the next generation.
+export function getStyleModes() {
+  const brandModes = getBrandPack()
+    .brands.filter((brand) => brand.imageStyle)
+    .map((brand) => ({
+      key: brand.key,
+      label: brand.imageStyle.label ?? brand.label,
+      suffix: brand.imageStyle.suffix,
+      negativePrompt: brand.imageStyle.negativePrompt,
+    }));
+  return [...STYLE_MODES, ...brandModes];
+}
 
 export function buildPrompt({ mode, userPrompt }) {
   const trimmed = (userPrompt || '').trim();
   if (!trimmed) throw new Error('A prompt is required to generate an image.');
 
-  const style = modeByKey[mode] || modeByKey.general;
+  const modes = getStyleModes();
+  const style = modes.find((m) => m.key === mode) || modes[0];
   return {
     prompt: `${trimmed}${style.suffix}`,
     negativePrompt: style.negativePrompt,

@@ -6,7 +6,9 @@ async function hordeFetch(path, { apiKey, method = 'GET', body } = {}) {
     headers: {
       'Content-Type': 'application/json',
       apikey: apiKey,
-      'Client-Agent': 'wisdom-studio:1.0:local-dev',
+      // AI Horde asks clients to identify themselves as name:version:contact.
+      // Set AI_HORDE_CONTACT (an email or URL) in backend/.env to be reachable.
+      'Client-Agent': `wisdom-studio:1.1:${process.env.AI_HORDE_CONTACT || 'local-dev'}`,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -25,15 +27,24 @@ const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
 // checkpoints but wrong for Flux (a distilled few-step model that wants
 // cfg ~1) and heavy for SDXL — using it on Flux produces the washed-out,
 // low-contrast output we kept seeing.
+//
+// Checked against the live API and AI Horde's model reference on 2026-09-29:
+//  - `scheduler` now names the sigma schedule and supersedes the older
+//    `karras` flag (both are sent, so older workers still understand).
+//  - Z-Image-Turbo (a new distilled model) accepts exactly 9 steps, cfg 1, the
+//    k_euler sampler and the `simple` scheduler.
 function paramProfileFor(model = '') {
   const m = String(model).toLowerCase();
+  if (m.includes('z-image')) {
+    return { sampler_name: 'k_euler', karras: false, scheduler: 'simple', steps: 9, cfg_scale: 1 };
+  }
   if (m.includes('flux')) {
     return { sampler_name: 'k_euler', karras: false, steps: 6, cfg_scale: 1 };
   }
   if (m.includes('xl') || m.includes('sdxl') || m.includes('cascade')) {
-    return { sampler_name: 'k_euler_a', karras: true, steps: 30, cfg_scale: 6 };
+    return { sampler_name: 'k_euler_a', karras: true, scheduler: 'karras', steps: 30, cfg_scale: 6 };
   }
-  return { sampler_name: 'k_euler_a', karras: true, steps: 28, cfg_scale: 7 };
+  return { sampler_name: 'k_euler_a', karras: true, scheduler: 'karras', steps: 28, cfg_scale: 7 };
 }
 
 function buildGenerationBody({
@@ -65,6 +76,7 @@ function buildGenerationBody({
       n: clamp(Math.round(Number(n) || 1), 1, 10),
       sampler_name: profile.sampler_name,
       karras: profile.karras,
+      ...(profile.scheduler ? { scheduler: profile.scheduler } : {}),
       steps: profile.steps,
       cfg_scale: profile.cfg_scale,
       // Only meaningful alongside a source_image (img2img/inpainting).
@@ -79,8 +91,11 @@ function buildGenerationBody({
     // Always explicitly disabled: never route requests to NSFW-only
     // workers or accept NSFW-flagged content, regardless of API default.
     nsfw: false,
-    // Sharing with LAION reduces the kudos cost of every generation.
-    shared: true,
+    // Sharing with LAION reduces the kudos cost of every generation, but it
+    // donates the image (and prompt) to a public dataset. Set
+    // WISDOM_STUDIO_SHARE_IMAGES=false in backend/.env to keep images private,
+    // for example for unpublished artwork.
+    shared: process.env.WISDOM_STUDIO_SHARE_IMAGES !== 'false',
     // Shrink the request instead of erroring if the account lacks kudos.
     allow_downgrade: true,
     // img2img: a base64 webp reference the workers paint from.

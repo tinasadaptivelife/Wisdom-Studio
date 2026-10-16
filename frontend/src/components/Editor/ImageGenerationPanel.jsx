@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useDesignStore } from '../../store/useDesignStore.js';
 import { imageGenApi } from '../../api/imageGenApi.js';
+import { getBrands } from '../../templates/brands.js';
+import { getTemplate } from '../../templates/templates.js';
 
-const STYLE_MODES = [
+const GENERIC_STYLE_MODES = [
   { key: 'general', label: 'General' },
   { key: 'storybook', label: 'Storybook illustration' },
   { key: 'flyer', label: 'Flyer graphic' },
   { key: 'coloring-page', label: 'Coloring page line art' },
+];
+
+// The generic styles, plus one for each brand that has an imageStyle (the
+// server has the matching prompt; the style's key is the brand's key).
+const styleModes = () => [
+  ...GENERIC_STYLE_MODES,
+  ...getBrands()
+    .filter((b) => b.imageStyle)
+    .map((b) => ({ key: b.key, label: b.imageStyle.label ?? b.label })),
 ];
 
 // Curated subset of AI Horde's post-processing upscalers — plain-language
@@ -21,8 +32,14 @@ const UPSCALERS = [
   { key: '4x_AnimeSharp', label: 'Anime, extra sharp' },
 ];
 
-const defaultModeForTemplate = (templateKey) =>
-  STYLE_MODES.some((m) => m.key === templateKey) ? templateKey : 'general';
+// Designs made in a brand that has an image style start on that style;
+// everything else keeps the older rule of matching the template key to a style.
+const defaultModeForTemplate = (templateKey = '') => {
+  const brandKey = getTemplate(templateKey).brand;
+  const modes = styleModes();
+  if (brandKey && getBrands().find((b) => b.key === brandKey)?.imageStyle) return brandKey;
+  return modes.some((m) => m.key === templateKey) ? templateKey : 'general';
+};
 
 const formatWait = (seconds) => {
   if (seconds == null) return null;
@@ -145,7 +162,7 @@ export default function ImageGenerationPanel({ element }) {
       <label>
         <span>Style</span>
         <select value={mode} onChange={(e) => setMode(e.target.value)}>
-          {STYLE_MODES.map((m) => (
+          {styleModes().map((m) => (
             <option key={m.key} value={m.key}>
               {m.label}
             </option>

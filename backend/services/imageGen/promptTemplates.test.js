@@ -1,5 +1,36 @@
-import { describe, it, expect } from 'vitest';
-import { buildPrompt, dimensionsForAspectRatio, DEFAULT_MODEL, STYLE_MODES } from './promptTemplates.js';
+import path from 'node:path';
+import { describe, it, expect, afterEach } from 'vitest';
+import { buildPrompt, dimensionsForAspectRatio, DEFAULT_MODEL, STYLE_MODES, getStyleModes } from './promptTemplates.js';
+
+describe('style modes', () => {
+  afterEach(() => {
+    process.env.WISDOM_STUDIO_BRANDS_DIR = '';
+  });
+
+  it('are the four generic ones when there is no brand pack', () => {
+    expect(STYLE_MODES.map((m) => m.key)).toEqual(['general', 'storybook', 'flyer', 'coloring-page']);
+    expect(getStyleModes().map((m) => m.key)).toEqual(['general', 'storybook', 'flyer', 'coloring-page']);
+  });
+
+  it('add a style for each brand in the pack that defines an imageStyle', () => {
+    process.env.WISDOM_STUDIO_BRANDS_DIR = path.resolve('test/fixtures/brand-pack');
+    // The fixture pack's second brand has no imageStyle, so it adds nothing.
+    expect(getStyleModes().map((m) => m.key)).toEqual(['general', 'storybook', 'flyer', 'coloring-page', 'example']);
+    expect(getStyleModes().at(-1).label).toBe('Example Studio look');
+  });
+
+  it('build a brand’s prompt from its imageStyle', () => {
+    process.env.WISDOM_STUDIO_BRANDS_DIR = path.resolve('test/fixtures/brand-pack');
+    const { prompt, negativePrompt } = buildPrompt({ mode: 'example', userPrompt: 'a white dog by a river' });
+    expect(prompt).toBe('a white dog by a river, soft watercolor, warm morning light');
+    expect(negativePrompt).toBe('blurry, text, 3D render');
+  });
+
+  it('fall back to general for a brand style that is not in the pack', () => {
+    const { prompt } = buildPrompt({ mode: 'example', userPrompt: 'a red barn' });
+    expect(prompt).toBe('a red barn');
+  });
+});
 
 describe('buildPrompt', () => {
   it('passes general-mode prompts through with only generic negative terms', () => {

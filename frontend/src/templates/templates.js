@@ -1,5 +1,26 @@
 import { makeId } from '../utils/id.js';
 import { PAGE_SIZES } from '../utils/pageSizes.js';
+import { getBrands } from './brands.js';
+
+// A brand's display font is for names and titles only: text at least this big
+// AND named like a headline. Everything else, including large body text and
+// essential information such as URLs and details, uses the reading font
+// (display fonts never carry essential information).
+const DISPLAY_MIN_SIZE = 32;
+const DISPLAY_NAMES = new Set(['Headline', 'Title', 'Masthead', 'Certificate title', 'Recipient name', 'Event name', 'Quote']);
+
+function applyBrandFonts(elements, brand) {
+  const { reading, display, displayFallback = 'sans-serif' } = brand.fonts;
+  return elements.map((el) => {
+    if (el.type !== 'text') return el;
+    const isDisplay = el.fontSize >= DISPLAY_MIN_SIZE && DISPLAY_NAMES.has(el.name);
+    const family = isDisplay ? display : reading;
+    // With no display font of its own, a brand's titles use its reading font in bold.
+    const bold = isDisplay && family === reading;
+    const fallback = family === display && family !== reading ? displayFallback : 'sans-serif';
+    return { ...el, fontFamily: `${family}, ${fallback}`, ...(bold ? { fontStyle: 'bold' } : {}) };
+  });
+}
 
 const textEl = (overrides) => ({
   id: makeId('el'),
@@ -61,89 +82,82 @@ export const ASSET_TYPES = [
   {
     key: 'coloring-page',
     title: 'Coloring page',
-    description: 'Earth-tone coloring page — 6 color options.',
+    description: 'Coloring page in your brand colors.',
     accent: '#ffb703',
   },
   {
     key: 'flyer',
     title: 'Flyer',
-    description: 'Earth-tone flyer — 6 color options.',
+    description: 'Flyer in your brand colors.',
     accent: '#fb8500',
   },
   {
     key: 'storybook',
     title: 'Storybook page',
-    description: 'Earth-tone storybook page — 6 color options.',
+    description: 'Storybook page in your brand colors.',
     accent: '#ef476f',
   },
   {
     key: 'quote-card',
     title: 'Quote card',
-    description: 'Earth-tone quote card — 6 color options.',
+    description: 'Quote card in your brand colors.',
     accent: '#e07a5f',
   },
   {
     key: 'document',
     title: 'Document',
-    description: 'Earth-tone document — 6 color options.',
+    description: 'Document in your brand colors.',
     accent: '#6c757d',
   },
   {
     key: 'newsletter',
     title: 'Newsletter',
-    description: 'Earth-tone newsletter — 6 color options.',
+    description: 'Newsletter in your brand colors.',
     accent: '#457b9d',
   },
   {
     key: 'workbook',
     title: 'Workbook',
-    description: 'Earth-tone workbook — 6 color options.',
+    description: 'Workbook in your brand colors.',
     accent: '#2a9d8f',
   },
   {
     key: 'certificate',
     title: 'Certificate',
-    description: 'Earth-tone certificate — 6 color options.',
+    description: 'Certificate in your brand colors.',
     accent: '#d4a017',
     defaultPageSize: 'letter-landscape',
   },
   {
     key: 'social-post',
     title: 'Social media post',
-    description: 'Earth-tone social media post — 6 color options.',
+    description: 'Social media post in your brand colors.',
     accent: '#ff6f91',
     defaultPageSize: 'social-square',
   },
   {
     key: 'invitation',
     title: 'Invitation',
-    description: 'Earth-tone invitation — 6 color options.',
+    description: 'Invitation in your brand colors.',
     accent: '#9d4edd',
+  },
+  {
+    key: 'clip-card',
+    title: 'Clip card',
+    description: 'Title, quote or end card for a 9:16 clip, in your brand colors.',
+    accent: '#4a9d9c',
+    defaultPageSize: 'story',
   },
   {
     key: 'brochure',
     title: 'Brochure',
-    description: 'Earth-tone brochure — 6 color options.',
+    description: 'Brochure in your brand colors.',
     accent: '#588157',
   },
 ];
 
-// Earth-tone palette. Only these three hexes are used for the themed
-// elements (background, border, headline) across the flyer variants below.
-const EARTH_TONES = {
-  cream: '#F5F0E8',
-  terracotta: '#C2704F',
-  sage: '#8A9A7E',
-};
-
-// Not a brand color — just a legible ink tone for body text on light (cream)
-// backgrounds, where terracotta/sage alone would be borderline-low-contrast
-// at body-text size. Every other template in this file already picks its own
-// readable fill rather than deriving one from a shared "brand ink."
-const READABLE_DARK = '#2b2620';
-
-// One shared flyer layout (Headline → Image → Details) reused by all 6
-// earth-tone color variants below — only the background/border/text
+// One shared flyer layout (Headline → Image → Details) reused by every
+// brand color variant below — only the background/border/text
 // colors change between them. The background+border is a single locked
 // rectangle behind everything else, so it can't be accidentally dragged.
 function buildBrandedFlyerPage(pageSize, { background, border, headline, body }) {
@@ -686,7 +700,7 @@ function buildBrochureForColors(pageSize, { background, border, headline, body }
       x: margin,
       y: height - margin - 30,
       width: width - margin * 2,
-      fontSize: 14,
+      fontSize: 16,
       align: 'center',
       fill: body,
     }),
@@ -744,105 +758,182 @@ function buildQuoteCardForColors(pageSize, { background, border, headline, body 
   ];
 }
 
-// The 6 earth-tone color pairings shared by every branded asset type.
-// Every pairing uses two of the three locked hexes, so the border always
-// complements (contrasts against) its background, and each of the 3 colors
-// appears as both a background and a border across the set. `suffix` is
-// appended to the type's base key (e.g. 'flyer' + '-cream-sage'), and the
-// first pairing (no suffix) reuses the bare base key — the "classic"/default
-// variant every legacy saved project's templateKey already points at.
-const COLOR_PAIRINGS = [
-  {
-    suffix: '',
-    label: 'Cream & Terracotta',
-    background: EARTH_TONES.cream,
-    border: EARTH_TONES.terracotta,
-    headline: EARTH_TONES.terracotta,
-    body: READABLE_DARK,
-  },
-  {
-    suffix: '-cream-sage',
-    label: 'Cream & Sage',
-    background: EARTH_TONES.cream,
-    border: EARTH_TONES.sage,
-    headline: EARTH_TONES.sage,
-    body: READABLE_DARK,
-  },
-  {
-    suffix: '-terracotta-sage',
-    label: 'Terracotta & Sage',
-    background: EARTH_TONES.terracotta,
-    border: EARTH_TONES.sage,
-    headline: EARTH_TONES.cream,
-    body: EARTH_TONES.cream,
-  },
-  {
-    suffix: '-sage-terracotta',
-    label: 'Sage & Terracotta',
-    background: EARTH_TONES.sage,
-    border: EARTH_TONES.terracotta,
-    headline: EARTH_TONES.cream,
-    body: EARTH_TONES.cream,
-  },
-  {
-    suffix: '-terracotta-cream',
-    label: 'Terracotta & Cream',
-    background: EARTH_TONES.terracotta,
-    border: EARTH_TONES.cream,
-    headline: EARTH_TONES.cream,
-    body: EARTH_TONES.cream,
-  },
-  {
-    suffix: '-sage-cream',
-    label: 'Sage & Cream',
-    background: EARTH_TONES.sage,
-    border: EARTH_TONES.cream,
-    headline: EARTH_TONES.cream,
-    body: EARTH_TONES.cream,
-  },
-];
-
-function buildBrandedVariants(baseKey, typeKey, assetLabel, buildPageForColors) {
-  return COLOR_PAIRINGS.map((pairing) => ({
-    key: `${baseKey}${pairing.suffix}`,
-    typeKey,
-    title: `${pairing.label} ${assetLabel}`,
-    description: `Earth-tone ${assetLabel} — 6 color options.`,
-    accent: pairing.background,
-    buildPage: (pageSize) => buildPageForColors(pageSize, pairing),
-  }));
+// A text-only 9:16 card for clips: a title card, a quote card or an end card.
+// Sizes scale with the page width (1080 is the design size). Everything sits in
+// the top 80% of the page, leaving the bottom fifth clear for burned-in
+// captions and the platform's own controls.
+function buildClipCardForColors(pageSize, { background, border, headline, body, footerText = 'yourname.example.com' }) {
+  const { width, height } = PAGE_SIZES[pageSize];
+  // 1080x1920 is the design size; smaller or wider pages shrink to fit.
+  const scale = Math.min(width / 1080, height / 1920);
+  const fs = (size) => Math.max(16, Math.round(size * scale)); // never below 16px
+  const margin = Math.round(96 * (width / 1080));
+  const textWidth = width - margin * 2;
+  const kickerY = Math.round(height * 0.27);
+  const headlineY = kickerY + Math.round(70 * scale);
+  const headlineHeight = Math.round(470 * scale);
+  const bodyY = headlineY + headlineHeight + Math.round(30 * scale);
+  const bodyHeight = Math.round(230 * scale);
+  const footerY = bodyY + bodyHeight + Math.round(30 * scale);
+  const borderInset = 12; // half of the 24px border stroke
+  const scrimPad = Math.round(56 * scale);
+  const scrimX = Math.round(48 * (width / 1080));
+  const scrimY = kickerY - scrimPad;
+  const scrimBottom = footerY + Math.max(fs(36) + 8, Math.round(60 * scale)) + scrimPad;
+  return [
+    shapeEl('rect', {
+      name: 'Brand background',
+      x: 0,
+      y: 0,
+      width,
+      height,
+      fill: background,
+      stroke: border,
+      strokeWidth: 24,
+      locked: true,
+    }),
+    imagePlaceholderEl({
+      name: 'Art',
+      x: borderInset,
+      y: borderInset,
+      width: width - borderInset * 2,
+      height: height - borderInset * 2,
+      label: 'Add art for the clip (optional)',
+      placeholderStyle: 'outline',
+    }),
+    // A translucent panel in the page color behind the text, so the words stay
+    // readable over any picture. With no art it is invisible.
+    shapeEl('rect', {
+      name: 'Scrim',
+      x: scrimX,
+      y: scrimY,
+      width: width - scrimX * 2,
+      height: scrimBottom - scrimY,
+      fill: background,
+      stroke: 'transparent',
+      strokeWidth: 0,
+      opacity: 0.86,
+      locked: true,
+    }),
+    textEl({
+      name: 'Kicker',
+      text: 'Season one, episode one',
+      x: margin,
+      y: kickerY,
+      width: textWidth,
+      height: Math.max(fs(36) + 8, Math.round(50 * scale)),
+      fontSize: fs(36),
+      align: 'left',
+      fill: headline,
+    }),
+    textEl({
+      name: 'Headline',
+      text: 'Your headline here',
+      x: margin,
+      y: headlineY,
+      width: textWidth,
+      height: headlineHeight,
+      fontSize: fs(92),
+      align: 'left',
+      fill: headline,
+    }),
+    textEl({
+      name: 'Body',
+      text: 'Supporting line.',
+      x: margin,
+      y: bodyY,
+      width: textWidth,
+      height: bodyHeight,
+      fontSize: fs(46),
+      align: 'left',
+      fill: body,
+    }),
+    textEl({
+      name: 'Footer',
+      text: footerText,
+      x: margin,
+      y: footerY,
+      width: textWidth,
+      height: Math.max(fs(36) + 8, Math.round(60 * scale)),
+      fontSize: fs(36),
+      align: 'left',
+      fill: body,
+    }),
+  ];
 }
 
-// Each template variant builds a first page of elements sized for the given
-// page dimensions. `key` is what gets persisted as a project's templateKey —
-// every legacy base key here (blank/coloring-page/flyer/storybook/
-// quote-card) must stay unchanged so old saved projects keep resolving.
-// 'script-sheet' was retired (replaced by 'newsletter') — old saved projects
-// referencing it fall back to blank via getTemplate's ?? TEMPLATES[0].
-export const TEMPLATES = [
-  {
-    key: 'blank',
-    typeKey: 'blank',
-    title: 'Blank canvas',
-    description: 'Start with an empty page and build it your way.',
-    buildPage: () => [],
-  },
-  ...buildBrandedVariants('coloring-page', 'coloring-page', 'coloring page', buildColoringPageForColors),
-  ...buildBrandedVariants('flyer', 'flyer', 'flyer', buildBrandedFlyerPage),
-  ...buildBrandedVariants('storybook', 'storybook', 'storybook page', buildStorybookPageForColors),
-  ...buildBrandedVariants('quote-card', 'quote-card', 'quote card', buildQuoteCardForColors),
-  ...buildBrandedVariants('document', 'document', 'document', buildDocumentForColors),
-  ...buildBrandedVariants('newsletter', 'newsletter', 'newsletter', buildNewsletterForColors),
-  ...buildBrandedVariants('workbook', 'workbook', 'workbook', buildWorkbookForColors),
-  ...buildBrandedVariants('certificate', 'certificate', 'certificate', buildCertificateForColors),
-  ...buildBrandedVariants('social-post', 'social-post', 'social media post', buildSocialPostForColors),
-  ...buildBrandedVariants('invitation', 'invitation', 'invitation', buildInvitationForColors),
-  ...buildBrandedVariants('brochure', 'brochure', 'brochure', buildBrochureForColors),
-];
+// Every branded asset type gets every palette of every brand in brands.js.
+// `suffix` is appended to the type's base key (e.g. 'flyer' + '-cream-sage').
+// A palette with an empty suffix reuses the bare base key: the "classic"
+// default variant every legacy saved project's templateKey points at.
+function buildBrandedVariants(brands, baseKey, typeKey, assetLabel, buildPageForColors) {
+  // Titles carry the brand's name only when there is more than one brand.
+  const named = brands.length > 1;
+  return brands.flatMap((brand) =>
+    brand.palettes.map((palette) => ({
+      key: `${baseKey}${palette.suffix}`,
+      typeKey,
+      brand: brand.key,
+      brandLabel: brand.label,
+      paletteKey: palette.key,
+      title: named ? `${brand.shortLabel}: ${palette.label} ${assetLabel}` : `${palette.label} ${assetLabel}`,
+      description: `${brand.label} ${assetLabel}, ${palette.label}.`,
+      accent: palette.background,
+      palette,
+      buildPage: (pageSize) =>
+        applyBrandFonts(buildPageForColors(pageSize, { ...palette, footerText: brand.footerText }), brand),
+    }))
+  );
+}
 
-export const getTemplate = (key) => TEMPLATES.find((t) => t.key === key) ?? TEMPLATES[0];
+function buildTemplates(brands) {
+  const variants = (baseKey, assetLabel, build) => buildBrandedVariants(brands, baseKey, baseKey, assetLabel, build);
+  // Each template variant builds a first page of elements sized for the given
+  // page dimensions. `key` is what gets persisted as a project's templateKey —
+  // every legacy base key here (blank/coloring-page/flyer/storybook/
+  // quote-card) must stay unchanged so old saved projects keep resolving.
+  // 'script-sheet' was retired (replaced by 'newsletter') — old saved projects
+  // referencing it fall back to blank via getTemplate's ?? templates[0].
+  return [
+    {
+      key: 'blank',
+      typeKey: 'blank',
+      title: 'Blank canvas',
+      description: 'Start with an empty page and build it your way.',
+      buildPage: () => [],
+    },
+    ...variants('coloring-page', 'coloring page', buildColoringPageForColors),
+    ...variants('flyer', 'flyer', buildBrandedFlyerPage),
+    ...variants('storybook', 'storybook page', buildStorybookPageForColors),
+    ...variants('quote-card', 'quote card', buildQuoteCardForColors),
+    ...variants('document', 'document', buildDocumentForColors),
+    ...variants('newsletter', 'newsletter', buildNewsletterForColors),
+    ...variants('workbook', 'workbook', buildWorkbookForColors),
+    ...variants('certificate', 'certificate', buildCertificateForColors),
+    ...variants('social-post', 'social media post', buildSocialPostForColors),
+    ...variants('invitation', 'invitation', buildInvitationForColors),
+    ...variants('brochure', 'brochure', buildBrochureForColors),
+    ...variants('clip-card', 'clip card', buildClipCardForColors),
+  ];
+}
 
-export const getTemplatesForType = (typeKey) => TEMPLATES.filter((t) => t.typeKey === typeKey);
+// The templates depend on the brands, which are set once at startup (brands.js),
+// so they are built on first use and rebuilt if the brands change.
+let builtFor = null;
+let built = null;
+export function getTemplates() {
+  const brands = getBrands();
+  if (builtFor !== brands) {
+    built = buildTemplates(brands);
+    builtFor = brands;
+  }
+  return built;
+}
+
+export const getTemplate = (key) => getTemplates().find((t) => t.key === key) ?? getTemplates()[0];
+
+export const getTemplatesForType = (typeKey, brandKey) =>
+  getTemplates().filter((t) => t.typeKey === typeKey && (!brandKey || t.brand === brandKey));
 
 export const getAssetType = (typeKey) => ASSET_TYPES.find((t) => t.key === typeKey) ?? ASSET_TYPES[0];
 

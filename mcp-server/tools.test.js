@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import {
+  listTemplates,
+  listBrands,
   createProject,
   setText,
   generateImage,
@@ -9,6 +11,8 @@ import {
   listBorderTemplates,
   addBorderFrame,
 } from './tools.js';
+import { setBrands } from './brands.js';
+import { EXAMPLE_BRANDS } from '../frontend/src/test/exampleBrands.js';
 
 const fakeProject = (overrides = {}) => ({
   id: 'proj_abc',
@@ -44,6 +48,7 @@ const stubImageDownload = (bytes = Buffer.from('fake-webp-bytes'), contentType =
   );
 
 beforeEach(() => {
+  setBrands(EXAMPLE_BRANDS);
   vi.useFakeTimers();
   stubImageDownload();
   client = {
@@ -60,6 +65,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setBrands(null);
   vi.unstubAllGlobals();
 });
 
@@ -76,6 +82,77 @@ describe('createProject', () => {
       'Attribution',
     ]);
     expect(project).toBe(payload);
+  });
+
+  it('builds the project in a brand’s palette when brand and palette are given', async () => {
+    await createProject(client, { templateKey: 'quote-card', brand: 'example', palette: 'navy-paper' });
+    const payload = client.createProject.mock.calls[0][0];
+    expect(payload.templateKey).toBe('quote-card-example-navy-paper');
+    expect(payload.pages[0].elements[0]).toMatchObject({ name: 'Brand background', fill: '#1F3A5F', stroke: '#F7F3EA' });
+  });
+
+  it('uses the brand’s first palette when only a brand is given', async () => {
+    await createProject(client, { templateKey: 'flyer', brand: 'sample' });
+    expect(client.createProject.mock.calls[0][0].templateKey).toBe('flyer-sample-night-gold');
+  });
+
+  it('still accepts a full legacy template key with no brand', async () => {
+    await createProject(client, { templateKey: 'flyer-example-navy-paper' });
+    expect(client.createProject.mock.calls[0][0].templateKey).toBe('flyer-example-navy-paper');
+  });
+
+  it('builds a clip card on the story page size', async () => {
+    await createProject(client, { templateKey: 'clip-card', brand: 'sample', palette: 'night-gold', pageSize: 'story' });
+    const payload = client.createProject.mock.calls[0][0];
+    expect(payload.pageSize).toBe('story');
+    expect(payload.pages[0].elements.map((e) => e.name)).toEqual(['Brand background', 'Art', 'Scrim', 'Kicker', 'Headline', 'Body', 'Footer']);
+  });
+
+  it('rejects an unknown brand before saving anything', async () => {
+    await expect(createProject(client, { templateKey: 'flyer', brand: 'nope' })).rejects.toThrow(/example, sample/);
+    expect(client.createProject).not.toHaveBeenCalled();
+  });
+});
+
+describe('listTemplates', () => {
+  it('lists every template with its brand and palette', () => {
+    const all = listTemplates();
+    expect(all).toHaveLength(1 + 12 * 5);
+    expect(all.find((t) => t.key === 'flyer-sample-night-gold')).toMatchObject({
+      brand: 'sample',
+      paletteKey: 'night-gold',
+      typeKey: 'flyer',
+    });
+  });
+
+  it('filters by brand', () => {
+    const list = listTemplates({ brand: 'sample' });
+    expect(list).toHaveLength(12 * 2);
+    expect(list.every((t) => t.brand === 'sample')).toBe(true);
+  });
+
+  it('filters by asset type', () => {
+    const list = listTemplates({ typeKey: 'quote-card' });
+    expect(list).toHaveLength(5);
+  });
+
+  it('rejects an unknown brand with the valid choices', () => {
+    expect(() => listTemplates({ brand: 'nope' })).toThrow(/example, sample/);
+  });
+});
+
+describe('listBrands', () => {
+  it('lists the brands with their palettes and colors, and which ones have an image style', () => {
+    const brands = listBrands();
+    expect(brands.map((b) => b.key)).toEqual(['example', 'sample']);
+    expect(brands[0]).toMatchObject({ label: 'Example Studio', imageStyle: 'example' });
+    expect(brands[1].imageStyle).toBeUndefined();
+    expect(brands[1].palettes[0]).toMatchObject({
+      key: 'night-gold',
+      label: 'Night & Gold',
+      background: '#141414',
+      headline: '#E0B84C',
+    });
   });
 });
 
@@ -317,6 +394,21 @@ describe('createQuoteCard (composite tool)', () => {
     expect(writeFile).toHaveBeenCalledWith('/tmp/quote.pdf', expect.any(Buffer));
     expect(result.path).toBe('/tmp/quote.pdf');
     expect(result.projectId).toBeTruthy();
+  });
+
+  it('passes brand and palette through to the project', async () => {
+    client.submitImageJob.mockResolvedValueOnce({ jobId: 'job1', model: 'stable_diffusion' });
+    client.getImageJobStatus.mockResolvedValueOnce({ done: true, faulted: false, images: [{ url: 'https://x/img.webp' }] });
+    const promise = createQuoteCard(client, {
+      quote: 'The river remembers.',
+      brand: 'sample',
+      palette: 'night-mist',
+      outputPath: '/tmp/q.pdf',
+      writeFile: vi.fn(async () => {}),
+    });
+    await vi.runAllTimersAsync();
+    await promise;
+    expect(client.createProject.mock.calls[0][0].templateKey).toBe('quote-card-sample-night-mist');
   });
 
   it('rejects an empty quote before doing any work', async () => {

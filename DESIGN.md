@@ -60,3 +60,8 @@ Rules: accent colors mark actions/selection/state, never decoration. Muted gray 
 ## Accessibility floor (non-negotiable)
 
 44×44px targets · AA contrast on every pairing · visible focus everywhere · plain-language labels ("Bring to front") · no time-limited UI · keyboard operability for every feature · reduced-motion respected.
+
+## Template brands (the designs Wisdom Studio makes, not the app's own UI)
+
+The app's own UI uses the navy/crimson tokens above. The *templates* (quote card, flyer, certificate, ...) come in one or more brands, each with a set of palettes. The built-in brand is in `frontend/src/templates/brands.js` (mirrored in `mcp-server/brands.js`); real brands come from a brand pack outside this repo (see `docs/brand-packs.md`). Rules, for every brand: every palette's headline is 4.5:1 or better and its body text 7:1 or better on the background (enforced when the server loads a pack, and by `brands.test.js` for the built-in brand); borders are decoration only; template keys are stable (a palette's `suffix` is appended to the template type, and an empty suffix keeps the bare key). Fonts: Atkinson Hyperlegible for all text under 32px and for essential information; a brand's display font only for 32px+ names and titles (`Headline`, `Title`, ...), or Atkinson bold when a brand has none. No template text is under 16px. The server embeds Atkinson Hyperlegible and any font in the pack in PDFs (`backend/services/pdfFonts.js`). Page sizes `story` (1080x1920) and `youtube-thumbnail`, and a `clip-card` type for 9:16 clip cards. Not done yet: brand-tagged border art.
+

@@ -21,7 +21,7 @@ Baked in from the start (a down payment on the full Phase 5 accessibility pass):
 
 Select any image placeholder on the canvas and the Properties panel shows a **Generate with AI** section:
 
-- A prompt field, a style picker (General / Storybook illustration / Flyer graphic / Coloring page line art), and a model picker populated live from AI Horde's currently-available Stable Diffusion models
+- A prompt field, a style picker (General / Storybook illustration / Flyer graphic / Coloring page line art, plus one style for each brand in your [brand pack](docs/brand-packs.md) that defines one; designs made in such a brand start on its style), and a model picker populated live from AI Horde's currently-available Stable Diffusion models
 - Submitting shows a friendly, persistent progress state — "Sending your request to AI Horde…" then "Generating your image… queue position N, about Ns left" — updated by polling every 4s. This runs at the store level, not component state, so it keeps going even if you deselect the element or switch pages
 - On success the placeholder becomes a real image layer — draggable, resizable, rotatable exactly like every other layer, since it reuses the same transform code path
 - On failure (or a faulted job), a clear error message with a **Retry** button; **Clear image** reverts a generated image back to an empty placeholder
@@ -32,6 +32,14 @@ Select any image placeholder on the canvas and the Properties panel shows a **Ge
 **Setup:** add your AI Horde API key to `backend/.env` as `AI_HORDE_API_KEY` (get one free at [aihorde.net/register](https://aihorde.net/register)). A `.env` with the shared anonymous key (`0000000000`) is already there so generation works out of the box — but the anonymous key is heavily deprioritized (expect a long queue, tens of minutes under load); a free registered key jumps you ahead of it. `.env` is gitignored; `.env.example` documents the variable.
 
 Generation has two quality tiers. Standard (default) caps at 576px on a side (snapped to a multiple of 64) because AI Horde requires extra kudos balance for anything over 665×665 — most anonymous/new keys don't have it, and this keeps things working without configuration. Checking **"Print quality"** in the Generate panel raises the cap to 1024px and adds a RealESRGAN 2× upscale pass (final images ~1536–2048px — genuinely printable at letter size); it costs more kudos, and `allow_downgrade` is set so low-balance keys get a smaller image instead of an error. All generations use AI Horde's recommended `k_euler_a` sampler with karras scheduling at 28 steps, and set `shared: true` (donates images to the LAION dataset, which also reduces kudos cost).
+
+### AI Horde check (2026-09-29)
+
+Checked against the live API (v5.1.11) and AI Horde's model reference. Adopted: the `Client-Agent` carries a contact (`name:version:contact`, set with `AI_HORDE_CONTACT`, default `local-dev`); the newer `scheduler` field is sent alongside `karras`; Z-Image-Turbo (a new model that needs exactly 9 steps, cfg 1, `k_euler`, `simple` scheduler) and AlbedoBase XL 3.1 are in the model list. Not adopted (yet): `transparent` (LayerDiffuse), `hires_fix`, custom `styles`, and sizes above 1024 (the API allows up to 3072). In a same-prompt test on 2026-09-29, Z-Image-Turbo gave the best painterly storybook scene and the best moody foggy scene; Dreamshaper was soft and generic, AlbedoBase XL 3.1 crisp but over-saturated. The default model is still Flux.1-Schnell; Flux had far fewer workers and was much slower that day, so consider switching the default to Z-Image-Turbo if it stays available. Your key's kudos balance decides how large you can go; the standard tier stays at 576px and print quality at 1024px.
+
+## Brands
+
+Templates come in one or more *brands*: a set of color palettes, fonts and (optionally) an AI image style. This repo ships one neutral built-in look and no one's real brands. Yours live in a **brand pack**, a folder outside this repo that the server reads at startup (`~/.wisdom-studio/brands` by default, or `WISDOM_STUDIO_BRANDS_DIR`). With a pack, the template gallery gets a brand picker, PDFs embed the pack's fonts, and the pack's image styles appear in the style picker; the MCP server sees the same brands through the backend. The format is in [docs/brand-packs.md](docs/brand-packs.md).
 
 ## What's in Phase 4 (partial) — PDF export
 
@@ -53,6 +61,26 @@ Wisdom-Studio/
 │                + services/pdfExport.js (server-side vector PDF rendering)
 └── mcp-server/  MCP tools so Claude can create/edit/export projects directly
 ```
+
+## Desktop app (double-click to launch)
+
+```bash
+desktop/make-app.sh            # puts "Wisdom Studio.app" and "Stop Wisdom Studio.command" on your Desktop
+```
+
+New designs save automatically (no edit needed).
+
+Double-click **Wisdom Studio** and it builds the app if needed (first launch, or after the source changes), starts the server on http://localhost:4000, and opens your browser. Opening it again while it is running just opens the browser. Double-click **Stop Wisdom Studio** to shut it down. Your projects are the same ones the dev servers use (`backend/data/`), and the log is `~/Library/Logs/Wisdom Studio.log`.
+
+The app is a thin launcher for this folder (`desktop/launch.sh`), so keep the project where it is and updates carry over. It needs Node 22 or newer. Run `desktop/make-app.sh` again if you move the folder.
+
+## Preview build (a single web page, no server)
+
+```bash
+cd frontend && npm run build:demo   # writes dist-preview/preview.html
+```
+
+A self-contained page for sharing a look at the app. Designs are saved in the viewer's browser only; AI images, file import and PDF export need the real server, and the page says so. Set `VITE_PREVIEW=1` (done by `--mode preview`) to switch the projects API to browser storage.
 
 ## Running it locally
 

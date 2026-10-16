@@ -15,6 +15,66 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('AI Horde request conventions (checked against the live API, 2026-09-29)', () => {
+  const submit = async (model) => {
+    fetch.mockResolvedValueOnce(jsonResponse({ id: 'job' }));
+    await aiHordeProvider.submit({ apiKey: 'k', prompt: 'a barn', model, width: 512, height: 512 });
+    return { options: fetch.mock.calls[0][1], body: JSON.parse(fetch.mock.calls[0][1].body) };
+  };
+
+  it('identifies the client as name:version:contact, as AI Horde asks, with a generic contact by default', async () => {
+    const { options } = await submit('stable_diffusion');
+    expect(options.headers['Client-Agent']).toMatch(/^wisdom-studio:\d+\.\d+:local-dev$/);
+  });
+
+  it('uses AI_HORDE_CONTACT as the contact when it is set', async () => {
+    vi.stubEnv('AI_HORDE_CONTACT', 'me@example.test');
+    const { options } = await submit('stable_diffusion');
+    expect(options.headers['Client-Agent']).toMatch(/^wisdom-studio:\d+\.\d+:me@example\.test$/);
+    vi.unstubAllEnvs();
+  });
+
+  it('names the sigma schedule with the newer `scheduler` field, alongside the older karras flag, for Stable Diffusion models', async () => {
+    for (const model of ['stable_diffusion', 'Dreamshaper', 'AlbedoBase XL 3.1']) {
+      fetch.mockReset();
+      const { body } = await submit(model);
+      expect(body.params.scheduler, model).toBe('karras');
+      expect(body.params.karras, model).toBe(true);
+    }
+  });
+
+  it('uses the exact settings the model reference requires for Z-Image-Turbo: 9 steps, cfg 1, k_euler, simple scheduler', async () => {
+    const { body } = await submit('Z-Image-Turbo');
+    expect(body.params).toMatchObject({ sampler_name: 'k_euler', steps: 9, cfg_scale: 1, scheduler: 'simple', karras: false });
+  });
+
+  it('keeps Flux on its few-step profile', async () => {
+    const { body } = await submit('Flux.1-Schnell fp8 (Compact)');
+    expect(body.params).toMatchObject({ sampler_name: 'k_euler', steps: 6, cfg_scale: 1, karras: false });
+  });
+});
+
+describe('sharing generated images with LAION', () => {
+  const sharedFlag = async () => {
+    fetch.mockResolvedValueOnce(jsonResponse({ id: 'job' }));
+    await aiHordeProvider.submit({ apiKey: 'k', prompt: 'a barn', model: 'stable_diffusion', width: 512, height: 512 });
+    return JSON.parse(fetch.mock.calls.at(-1)[1].body).shared;
+  };
+
+  afterEach(() => {
+    delete process.env.WISDOM_STUDIO_SHARE_IMAGES;
+  });
+
+  it('shares by default (it lowers the kudos cost), as before', async () => {
+    expect(await sharedFlag()).toBe(true);
+  });
+
+  it('keeps images private when WISDOM_STUDIO_SHARE_IMAGES is "false", for unpublished artwork', async () => {
+    process.env.WISDOM_STUDIO_SHARE_IMAGES = 'false';
+    expect(await sharedFlag()).toBe(false);
+  });
+});
+
 describe('aiHordeProvider.submit', () => {
   it('posts to /generate/async with the api key header and returns the provider job id', async () => {
     fetch.mockResolvedValueOnce(jsonResponse({ id: 'horde-job-1' }));

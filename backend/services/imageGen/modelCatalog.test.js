@@ -26,6 +26,20 @@ describe('isBlockedModelName', () => {
   });
 });
 
+describe('curateModels (models added after checking the live AI Horde)', () => {
+  it('offers Z-Image-Turbo and AlbedoBase XL 3.1 when they are running, with plain labels', () => {
+    const result = curateModels(live(['stable_diffusion', 'Z-Image-Turbo', 'AlbedoBase XL 3.1']));
+    const names = result.map((m) => m.name);
+    expect(names).toContain('Z-Image-Turbo');
+    expect(names).toContain('AlbedoBase XL 3.1');
+    for (const m of result) expect(m.label).not.toMatch(/_|SDXL|checkpoint|turbo/i);
+  });
+
+  it('does not offer them when nobody is serving them', () => {
+    expect(curateModels(live(['stable_diffusion'])).map((m) => m.name)).toEqual(['stable_diffusion']);
+  });
+});
+
 describe('curateModels', () => {
   it('returns only allowlisted models that are actually available, with plain-language labels', () => {
     const result = curateModels(

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import ImageGenerationPanel from './ImageGenerationPanel.jsx';
 import { useDesignStore } from '../../store/useDesignStore.js';
+import { setBrands } from '../../templates/brands.js';
+import { EXAMPLE_BRANDS } from '../../test/exampleBrands.js';
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -15,10 +17,53 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  setBrands(null);
   vi.unstubAllGlobals();
 });
 
 const currentElement = () => useDesignStore.getState().project.pages[0].elements[0];
+
+describe('ImageGenerationPanel brand styles', () => {
+  const panelFor = (templateKey) => {
+    useDesignStore.getState().closeProject();
+    useDesignStore.getState().newProjectFromTemplate(templateKey);
+    useDesignStore.getState().addElement('image-placeholder');
+    render(<ImageGenerationPanel element={useDesignStore.getState().project.pages[0].elements.at(-1)} />);
+    return screen.getByLabelText(/style/i);
+  };
+  const optionsOf = (select) => Array.from(select.querySelectorAll('option')).map((o) => [o.value, o.textContent]);
+
+  const GENERIC = [
+    ['general', 'General'],
+    ['storybook', 'Storybook illustration'],
+    ['flyer', 'Flyer graphic'],
+    ['coloring-page', 'Coloring page line art'],
+  ];
+
+  it('offers only the generic styles when no brand has an image style', () => {
+    expect(optionsOf(panelFor('blank'))).toEqual(GENERIC);
+  });
+
+  it('adds a style for each brand that has an imageStyle', () => {
+    setBrands(EXAMPLE_BRANDS);
+    // The second example brand has no imageStyle, so it adds nothing.
+    expect(optionsOf(panelFor('blank'))).toEqual([...GENERIC, ['example', 'Example Studio look']]);
+  });
+
+  it('starts on a brand’s style when the design is in that brand', () => {
+    setBrands(EXAMPLE_BRANDS);
+    expect(panelFor('quote-card').value).toBe('example'); // first palette of the first brand
+    cleanup();
+    expect(panelFor('clip-card-example-navy-paper').value).toBe('example');
+  });
+
+  it('starts on General for a brand without an image style, and for plain templates', () => {
+    setBrands(EXAMPLE_BRANDS);
+    expect(panelFor('quote-card-sample-night-gold').value).toBe('general');
+    cleanup();
+    expect(panelFor('blank').value).toBe('general');
+  });
+});
 
 describe('ImageGenerationPanel upscale controls', () => {
   it('defaults to no upscaling, with no upscaler picker or Alchemy button shown', () => {

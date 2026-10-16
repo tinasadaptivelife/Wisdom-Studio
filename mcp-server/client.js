@@ -59,6 +59,14 @@ export function createClient(baseUrl = BASE_URL) {
       }
     },
 
+    async getBrands() {
+      try {
+        return await fetch(`${baseUrl}/api/brands`).then(handle);
+      } catch (err) {
+        throw withConnectionHint(err);
+      }
+    },
+
     async getModels() {
       try {
         return await fetch(`${baseUrl}/api/image-gen/models`).then(handle);

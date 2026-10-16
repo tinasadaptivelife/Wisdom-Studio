@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import sharp from 'sharp';
 import { PAGE_SIZES } from '../utils/pageSizes.js';
+import { resolveFontFile, loadFontBytes } from './pdfFonts.js';
 
 // Konva/CSS pixels (96dpi) -> PDF points (72dpi). Matches the frontend's
 // exportPdf.js so server- and client-rendered PDFs agree on page size.
@@ -60,6 +62,21 @@ async function defaultFetchImageBytes(url) {
   return Buffer.from(await res.arrayBuffer());
 }
 
+// One embedded font per (file) per document. Brand families are embedded from
+// assets/fonts; anything else falls back to Helvetica.
+function makeFontResolver(pdfDoc) {
+  const cache = new Map();
+  const embed = async (key, load) => {
+    if (!cache.has(key)) cache.set(key, load());
+    return cache.get(key);
+  };
+  return (element) => {
+    const file = resolveFontFile(element.fontFamily, element.fontStyle);
+    if (file) return embed(file, () => pdfDoc.embedFont(loadFontBytes(file), { subset: true }));
+    return embed('helvetica', () => pdfDoc.embedFont(StandardFonts.Helvetica));
+  };
+}
+
 async function drawText(page, font, element, pageHeightPt) {
   const x = pxToPt(element.x);
   const boxWidth = pxToPt(element.width);
@@ -90,6 +107,8 @@ function drawRect(page, element, pageHeightPt) {
     color: hexToRgb(element.fill),
     borderColor: hexToRgb(element.stroke),
     borderWidth: element.strokeWidth ? pxToPt(element.strokeWidth) : 0,
+    // Only translucent shapes get a transparency state; the rest are unchanged.
+    ...(element.opacity != null && element.opacity < 1 ? { opacity: element.opacity, borderOpacity: element.opacity } : {}),
   });
 }
 
@@ -121,7 +140,8 @@ async function drawImage(pdfDoc, page, element, pageHeightPt, fetchImageBytes) {
 
 export async function renderProjectToPdf(project, { fetchImageBytes = defaultFetchImageBytes } = {}) {
   const pdfDoc = await PDFDocument.create();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  pdfDoc.registerFontkit(fontkit);
+  const fontFor = makeFontResolver(pdfDoc);
   const { width: pageWidthPx, height: pageHeightPx } = PAGE_SIZES[project.pageSize];
   const pageWidthPt = pxToPt(pageWidthPx);
   const pageHeightPt = pxToPt(pageHeightPx);
@@ -132,7 +152,7 @@ export async function renderProjectToPdf(project, { fetchImageBytes = defaultFet
       if (element.visible === false) continue;
       try {
         if (element.type === 'text') {
-          await drawText(page, font, element, pageHeightPt);
+          await drawText(page, await fontFor(element), element, pageHeightPt);
         } else if (element.type === 'rect') {
           drawRect(page, element, pageHeightPt);
         } else if (element.type === 'ellipse') {

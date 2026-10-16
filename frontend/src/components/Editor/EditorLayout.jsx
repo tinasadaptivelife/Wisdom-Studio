@@ -24,8 +24,8 @@ export default function EditorLayout() {
   const announce = useDesignStore((s) => s.announce);
   const timerRef = useRef(null);
   const retryTimerRef = useRef(null);
-  // A loaded project is already in the backend; a brand-new one (just
-  // created from a template) isn't yet — captured once at mount via the
+  // A loaded project is already in the backend (saved with PUT); a brand-new
+  // one isn't yet, so its first save is a POST. Captured once at mount via the
   // saveStatus loadProject/newProjectFromTemplate set ('saved' vs 'unsaved').
   const persistedRef = useRef(useDesignStore.getState().saveStatus === 'saved');
   const stageApiRef = useRef(null);
@@ -60,15 +60,11 @@ export default function EditorLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Autosave: debounce writes to the backend whenever the project changes.
-  // A brand-new project (from a template, never yet persisted) doesn't save
-  // until the user makes a real edit — merely opening/browsing a template
-  // shouldn't clutter the saved-projects list. past.length>0 is exactly
-  // "at least one edit has happened since this project was created/loaded."
+  // Autosave: debounce writes to the backend whenever the project changes. A
+  // brand-new project (just created from a template) saves too, even before
+  // its first edit, so opening a template never loses work if the tab closes.
   useEffect(() => {
     if (!project) return;
-    const hasRealEdit = persistedRef.current || useDesignStore.getState().past.length > 0;
-    if (!hasRealEdit) return;
     if (timerRef.current) clearTimeout(timerRef.current);
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current);

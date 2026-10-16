@@ -3,9 +3,11 @@ import { writeFile } from 'node:fs/promises';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { refreshBrands } from './brands.js';
 import { createClient } from './client.js';
 import {
   listTemplates,
+  listBrands,
   createProject,
   setText,
   addElement,
@@ -23,15 +25,61 @@ const server = new McpServer({ name: 'wisdom-studio', version: '1.0.0' });
 const text = (value) => ({ content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 2) }] });
 const errorResult = (err) => ({ content: [{ type: 'text', text: `Error: ${err.message}` }], isError: true });
 
+// The brands a design can be made in come from the backend's brand pack (see
+// docs/brand-packs.md), so they are looked up on each call rather than fixed
+// here. list_brands shows what is available.
+const brandField = z
+  .string()
+  .optional()
+  .describe(
+    'Which brand to design in (a key from list_brands). Omit for the first brand, which is also what the plain template keys use.'
+  );
+const paletteField = z
+  .string()
+  .optional()
+  .describe('Palette key within the brand (see list_brands). Defaults to the brand\'s first palette.');
+
+// The image styles: four generic ones, plus one for each brand that has an
+// image style (its key is the brand's key; list_brands says which have one).
+const styleField = z
+  .string()
+  .optional()
+  .describe(
+    'Style/prompt-engineering preset: general, storybook, flyer, coloring-page, or the key of a brand that has an image style (see list_brands). Defaults to "general".'
+  );
+
 server.registerTool(
   'list_templates',
   {
     title: 'List design templates',
-    description: 'List the starter templates Wisdom Studio offers (blank canvas, flyer, storybook page, coloring page, quote card, document, newsletter, workbook, certificate, social media post, invitation, brochure).',
+    description:
+      'List the starter templates Wisdom Studio offers (blank canvas, flyer, storybook page, coloring page, quote card, document, newsletter, workbook, certificate, social media post, invitation, brochure, clip card). Every type comes in each palette of each brand, so filter by brand and/or typeKey. To just pick a brand, use create_project with brand and palette instead.',
+    inputSchema: {
+      brand: brandField,
+      typeKey: z.string().optional().describe('Only this template type, e.g. "quote-card".'),
+    },
+  },
+  async (args) => {
+    try {
+      await refreshBrands(client);
+      return text(listTemplates(args));
+    } catch (err) {
+      return errorResult(err);
+    }
+  }
+);
+
+server.registerTool(
+  'list_brands',
+  {
+    title: 'List brands and their palettes',
+    description:
+      'List the brands Wisdom Studio can design in, each with its palettes and their colors. Use the brand and palette keys with create_project or create_quote_card. A brand with an "imageStyle" also has an image style of that name for generate_image and create_quote_card.',
   },
   async () => {
     try {
-      return text(listTemplates());
+      await refreshBrands(client);
+      return text(listBrands());
     } catch (err) {
       return errorResult(err);
     }
@@ -45,15 +93,21 @@ server.registerTool(
     description: 'Create a new Wisdom Studio design project, optionally seeded from a template (see list_templates). Returns the created project, including its id.',
     inputSchema: {
       name: z.string().optional().describe('Project name. Defaults to a name based on the template.'),
-      templateKey: z.string().optional().describe('Template key from list_templates, e.g. "quote-card". Defaults to a blank canvas.'),
-      pageSize: z
-        .enum(['letter', 'a4', 'letter-landscape', 'social-square'])
+      templateKey: z
+        .string()
         .optional()
-        .describe('Physical page size. Defaults to US Letter.'),
+        .describe('Template type, e.g. "quote-card" (or a full key from list_templates). Defaults to a blank canvas.'),
+      brand: brandField,
+      palette: paletteField,
+      pageSize: z
+        .enum(['letter', 'a4', 'letter-landscape', 'social-square', 'story', 'youtube-thumbnail'])
+        .optional()
+        .describe('Page size. Defaults to US Letter. Use "story" (1080x1920) for clip cards and "youtube-thumbnail" (1280x720) for thumbnails.'),
     },
   },
   async (args) => {
     try {
+      await refreshBrands(client);
       return text(await createProject(client, args));
     } catch (err) {
       return errorResult(err);
@@ -129,7 +183,7 @@ server.registerTool(
       elementName: z.string().describe('The image-placeholder element’s "name" field, e.g. "Complementary image".'),
       prompt: z.string(),
       pageIndex: z.number().int().min(0).optional(),
-      style: z.enum(['general', 'storybook', 'flyer', 'coloring-page']).optional().describe('Style/prompt-engineering preset. Defaults to "general".'),
+      style: styleField,
       printQuality: z.boolean().optional().describe('Higher resolution + upscale, for the final print file. Slower. Defaults to false.'),
       referenceImage: z
         .string()
@@ -223,7 +277,9 @@ server.registerTool(
       quote: z.string().describe('The quote text.'),
       author: z.string().optional().describe('Attribution, e.g. "Maya Angelou". Rendered as "— Author".'),
       imagePrompt: z.string().optional().describe('Prompt for the complementary image. If omitted, one is derived from the quote.'),
-      style: z.enum(['general', 'storybook', 'flyer', 'coloring-page']).optional().describe('Image style preset. Defaults to "general".'),
+      style: styleField,
+      brand: brandField,
+      palette: paletteField,
       pageSize: z.enum(['letter', 'a4']).optional(),
       printQuality: z.boolean().optional().describe('Higher resolution image for print. Slower. Defaults to false.'),
       outputPath: z.string().optional().describe('Where to write the finished PDF. Defaults to a system temp file.'),
@@ -232,6 +288,7 @@ server.registerTool(
   },
   async (args) => {
     try {
+      await refreshBrands(client);
       return text(await createQuoteCard(client, { ...args, writeFile }));
     } catch (err) {
       return errorResult(err);
